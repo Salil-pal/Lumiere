@@ -137,7 +137,7 @@
 
                 {{-- BRAND --}}
                 <p class="product-brand">
-                  {{ $product->brand->name ?? 'No Brand' }}
+                  {{ $product->brand->en_brand_name ?? 'No Brand' }}
                 </p>
 
                 {{-- NAME --}}

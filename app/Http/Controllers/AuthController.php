@@ -28,6 +28,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role' => 'user',
         ]);
 
         return redirect()->route('login')->with('success', 'Account created');
@@ -46,7 +47,11 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
 
-            $request->session()->regenerate(); // 🔥 CRITICAL FIX
+            $request->session()->regenerate();
+
+            if (auth()->user()->role === 'admin') {
+                return redirect('/admin'); // Filament panel
+            }
 
             return redirect()->route('welcome.index');
         }
@@ -58,6 +63,10 @@ class AuthController extends Controller
     public function logout()
     {
         Auth::logout();
+
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+
         return redirect()->route('login');
     }
 }
