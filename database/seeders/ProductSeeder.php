@@ -30,6 +30,7 @@ class ProductSeeder extends Seeder
                 'is_new_arrival' => rand(0,1),
                 'is_onsale' => rand(0,1),
                 'price' => $price,
+                'stock' => 20,
                 'discount' => $discount,
                 'discounted_price' => $discounted,
                 'quantity' => rand(5,100),

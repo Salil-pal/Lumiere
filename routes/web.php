@@ -20,6 +20,8 @@ use App\Http\Controllers\Frontend\StripeController;
 use App\Http\Controllers\Frontend\StripeWebhookController;
 use App\Http\Controllers\AuthController;
 
+
+
 /*
 |--------------------------------------------------------------------------
 | PUBLIC ROUTES

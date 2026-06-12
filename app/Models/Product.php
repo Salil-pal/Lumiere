@@ -20,6 +20,7 @@ class Product extends Model
     'is_new_arrival',
     'is_onsale',
     'price',
+    'stock',
     'discount',
     'discounted_price',
     'quantity',

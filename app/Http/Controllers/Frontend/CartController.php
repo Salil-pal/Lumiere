@@ -4,133 +4,76 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Product;
+use App\Services\CartService;
+use App\Http\Requests\AddToCartRequest;
 
 class CartController extends Controller
 {
+    protected $cartService;
+
+    // Dependency Injection
+    public function __construct(CartService $cartService)
+    {
+        $this->cartService = $cartService;
+    }
+
     // Show cart page
     public function index()
     {
         return view('front.cart.index');
     }
 
-    
-
-    // Add to cart (AJAX)
-    public function add(Request $request)
+    // Add to cart
+    public function add(AddToCartRequest $request)
     {
-        $product = Product::findOrFail($request->id);
-
-        $cart = session()->get('cart', []);
-
-        $price = $product->discounted_price 
-                    ? $product->discounted_price 
-                    : $product->price;
-
-        if(isset($cart[$product->id])) {
-            $cart[$product->id]['quantity']++;
-        } else {
-            $cart[$product->id] = [
-                "product_id" => $product->id,
-                "name" => $product->en_name,
-                "price" => $price,
-                "image" => $product->image,
-                "quantity" => 1
-            ];
-        }
-
-        session()->put('cart', $cart);
+        $cart = $this->cartService->add($request->id);
 
         return response()->json([
             'status' => 'success',
-            'count' => array_sum(array_column($cart, 'quantity'))
+            'count'  => $this->cartService->cartCount($cart),
         ]);
     }
 
-    // --------------- Update -------------
-
+    // Update cart
     public function update(Request $request)
     {
-        $cart = session()->get('cart', []);
+        $cart = $this->cartService->update(
+            $request->id,
+            $request->action
+        );
 
-        if(isset($cart[$request->id])) {
-
-            if($request->action == 'plus') {
-                $cart[$request->id]['quantity']++;
-            }
-
-            if($request->action == 'minus') {
-                if($cart[$request->id]['quantity'] > 1) {
-                    $cart[$request->id]['quantity']--;
-                }
-            }
-
-            session()->put('cart', $cart);
-        }
-
-        // calculate subtotal
         $item = $cart[$request->id];
-        $subtotal = $item['price'] * $item['quantity'];
-
-        // calculate total
-        $total = 0;
-        foreach($cart as $c){
-            $total += $c['price'] * $c['quantity'];
-        }
 
         return response()->json([
-            'status' => 'success',
+            'status'   => 'success',
             'quantity' => $item['quantity'],
-            'subtotal' => $subtotal,
-            'total' => $total,
-            'count' => array_sum(array_column($cart, 'quantity'))
+            'subtotal' => $item['price'] * $item['quantity'],
+            'total'    => $this->cartService->calculateTotal($cart),
+            'count'    => $this->cartService->cartCount($cart),
         ]);
     }
 
-    // --------------- Remove -------------
-
+    // Remove item
     public function remove(Request $request)
     {
-        $cart = session()->get('cart', []);
-
-        if(isset($cart[$request->id])) {
-            unset($cart[$request->id]);
-            session()->put('cart', $cart);
-        }
-
-        // recalculate
-        $total = 0;
-        foreach($cart as $item){
-            $total += $item['price'] * $item['quantity'];
-        }
+        $cart = $this->cartService->remove($request->id);
 
         return response()->json([
             'status' => 'success',
-            'total' => $total,
-            'count' => array_sum(array_column($cart, 'quantity'))
+            'total'  => $this->cartService->calculateTotal($cart),
+            'count'  => $this->cartService->cartCount($cart),
         ]);
     }
 
-    // --------------- Remove selected item -------------
-
+    // Remove selected items
     public function removeSelected(Request $request)
     {
-        $cart = session()->get('cart', []);
-
-        foreach($request->ids as $id){
-            unset($cart[$id]);
-        }
-
-        session()->put('cart', $cart);
-
-        $total = 0;
-        foreach($cart as $item){
-            $total += $item['price'] * $item['quantity'];
-        }
+        $cart = $this->cartService->removeSelected($request->ids);
 
         return response()->json([
-            'total' => $total,
-            'count' => array_sum(array_column($cart, 'quantity')),
+            'status' => 'success',
+            'total'  => $this->cartService->calculateTotal($cart),
+            'count'  => $this->cartService->cartCount($cart),
         ]);
     }
 }

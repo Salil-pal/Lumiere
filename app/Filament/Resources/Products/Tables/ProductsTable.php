@@ -13,6 +13,9 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\TernaryFilter;
+
 class ProductsTable
 {
     public static function configure(Table $table): Table
@@ -59,7 +62,35 @@ class ProductsTable
 
                 // STOCK
                 TextColumn::make('quantity')
-                    ->label('Stock'),
+                    ->label('Stock')
+                    ->badge()
+                    ->color(fn ($state) => match (true) {
+
+                        $state <= 0 => 'danger',
+
+                        $state <= 5 => 'warning',
+
+                        default => 'success',
+                    }),
+                TextColumn::make('stock_status')
+                    ->getStateUsing(function ($record) {
+
+                        if ($record->stock <= 0) {
+                            return 'Out of Stock';
+                        }
+
+                        if ($record->stock <= 5) {
+                            return 'Low Stock';
+                        }
+
+                        return 'In Stock';
+                    })
+                    ->badge()
+                    ->color(fn ($state) => match ($state) {
+                        'Out of Stock' => 'danger',
+                        'Low Stock' => 'warning',
+                        default => 'success',
+                    }),
 
                 // STATUS
                 IconColumn::make('is_active')
@@ -78,6 +109,35 @@ class ProductsTable
                     ->label('New Arrival')
                     ->boolean(),
             ])
+
+            // =========================
+            // Filter
+            // =========================
+
+            ->filters([
+
+                TernaryFilter::make('is_active'),
+
+                TernaryFilter::make('is_featured'),
+
+                TernaryFilter::make('is_best_selling'),
+
+                TernaryFilter::make('is_new_arrival'),
+
+                TernaryFilter::make('is_onsale'),
+
+                Filter::make('low_stock')
+                    ->query(fn ($query) =>
+                        $query->where('stock', '<=', 5)
+                    ),
+                
+                Filter::make('out_of_stock')
+                    ->query(fn ($query) =>
+                        $query->where('quantity', '<=', 0)
+                    ),
+
+            ])
+            
 
             // =========================
             // ROW ACTIONS (EDIT / DELETE)

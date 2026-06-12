@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\View;
 use App\Models\Category;
+use Illuminate\Support\Facades\Queue;
 
 class AppServiceProvider extends ServiceProvider
 {

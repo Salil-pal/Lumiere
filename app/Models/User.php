@@ -1,17 +1,18 @@
 <?php
+
 namespace App\Models;
+
+use Filament\Panel;
+use Filament\Models\Contracts\FilamentUser;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable;
 
-    /**
-     * Mass assignable fields
-     */
     protected $fillable = [
         'name',
         'email',
@@ -19,17 +20,11 @@ class User extends Authenticatable
         'role',
     ];
 
-    /**
-     * Hidden fields
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Attribute casting
-     */
     protected function casts(): array
     {
         return [
@@ -43,10 +38,7 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\Order::class);
     }
 
-    /**
-     * Filament access control (IMPORTANT)
-     */
-    public function canAccessPanel(\Filament\Panel $panel): bool
+    public function canAccessPanel(Panel $panel): bool
     {
         return $this->role === 'admin';
     }

@@ -93,7 +93,7 @@ class ProductForm
             // =========================
             // STOCK
             // =========================
-            TextInput::make('quantity')
+            TextInput::make('stock')
                 ->numeric()
                 ->default(0),
 

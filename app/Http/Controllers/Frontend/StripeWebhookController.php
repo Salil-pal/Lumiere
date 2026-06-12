@@ -5,40 +5,47 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Stripe\Webhook;
-use App\Models\Order;
+use App\Services\StripeService;
 
 class StripeWebhookController extends Controller
 {
+    protected StripeService $stripeService;
+
+    public function __construct(StripeService $stripeService)
+    {
+        $this->stripeService = $stripeService;
+    }
+
     public function handleWebhook(Request $request)
     {
-        $payload = $request->getContent();
-        $sig_header = $request->header('Stripe-Signature');
+        \Log::info('WEBHOOK CONTROLLER HIT');
 
-        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
+        $payload = $request->getContent();
+        $sigHeader = $request->header('Stripe-Signature');
+        $endpointSecret = env('STRIPE_WEBHOOK_SECRET');
 
         try {
             $event = Webhook::constructEvent(
-                $payload, $sig_header, $endpoint_secret
+                $payload,
+                $sigHeader,
+                $endpointSecret
             );
         } catch (\Exception $e) {
+            \Log::error('Invalid Stripe webhook', [
+                'error' => $e->getMessage()
+            ]);
+
             return response()->json(['error' => 'Invalid payload'], 400);
         }
 
-        // 🎯 PAYMENT SUCCESS EVENT
-        if ($event->type == 'checkout.session.completed') {
+        // ONLY handle checkout session
+        if ($event->type === 'checkout.session.completed') {
+
+            \Log::info('CHECKOUT SESSION COMPLETED');
 
             $session = $event->data->object;
 
-            // 👇 we will pass order id here
-            $orderId = $session->metadata->order_id;
-
-            $order = Order::find($orderId);
-
-            if ($order) {
-                $order->update([
-                    'status' => 'paid'
-                ]);
-            }
+            $this->stripeService->handleSuccessfulPayment($session);
         }
 
         return response()->json(['status' => 'success']);
